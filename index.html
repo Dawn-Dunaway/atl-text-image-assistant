@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alt Text Decision Tree</title>
+  <style>
+    body { font-family: Arial, sans-serif; background-color: #0077c8; margin: 0; padding: 2rem; color: #ffffff; }
+    .container { max-width: 1000px; margin: auto; padding: 2rem; background: #0077c8; border-radius: 1rem; }
+    h1 { text-align: center; font-size: 2.5rem; }
+    .overview { background: #ffffff; color: #000000; padding: 1rem; border-radius: 0.5rem; margin-bottom: 2rem; }
+    .flowchart { display: flex; flex-direction: column; gap: 1rem; }
+    .step { padding: 1rem; border-radius: 0.5rem; transition: background 0.3s, opacity 0.3s; background: #e5e5e5; color: #000; border-left: 5px solid #32c2a2; cursor: pointer; }
+    .step.faded { opacity: 0.4; }
+    .step.active { opacity: 1; }
+    .branch { display: flex; flex-direction: row; gap: 1rem; }
+    .branch .option { flex: 1; padding: 1rem; border-radius: 0.5rem; color: #000; }
+    .branch .yes { background: #fdda24; border-left: 5px solid #32c2a2; }
+    .branch .no { background: #e5e5e5; border-left: 5px solid #32c2a2; cursor: pointer; }
+    .branch .no:hover { background: #d5d5d5; }
+    .answer-detail { margin-top: 0.5rem; font-size: 0.95rem; }
+    .answer-detail a { color: #005a9c; text-decoration: underline; display: inline-block; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Alt Text Decision Tree</h1>
+    <div class="overview">
+      <p>This decision tree describes how to compose the <code>alt</code> attribute of an image in various situations. Use the following series of questions to determine your best approach to providing accessible alternative text for images in web content. Each answer provides a direct link to guidance from the W3C Web Accessibility Initiative (WAI).</p>
+    </div>
+    <div class="flowchart" id="flowchart"></div>
+  </div>
+
+  <script>
+    const flowchartData = [
+      {
+        id: 0,
+        question: "Does the image contain text?",
+        yes: [
+          { desc: "Image of text that is already present nearby in real text.", link: "https://www.w3.org/WAI/tutorials/images/decorative/", label: "Mark as decorative, or use an empty alt attribute." },
+          { desc: "Image of decorative text used only for visual effects.", link: "https://www.w3.org/WAI/tutorials/images/decorative/", label: "Mark as decorative, or use an empty alt attribute." },
+          { desc: "Image of text that performs a function (e.g., icon).", link: "https://www.w3.org/WAI/tutorials/images/functional/", label: "Use text to communicate the function of the image." },
+          { desc: "Image of text that is important content and not elsewhere.", link: "https://www.w3.org/WAI/tutorials/images/textual/", label: "Use alt-text to convey the text of the image." }
+        ],
+        noId: 1
+      },
+      {
+        id: 1,
+        question: "Is the image used in a link or a button, and would it be hard or impossible to understand what the link or the button does, if the image wasn’t there?",
+        yes: [
+          { desc: "Functional images used in buttons or interactive elements.", link: "https://www.w3.org/WAI/tutorials/images/functional/", label: "Use alt-text to communicate link or button destination or purpose." }
+        ],
+        noId: 2
+      },
+      {
+        id: 2,
+        question: "Does the image contribute meaning to the current page or content?",
+        yes: [
+          { desc: "Simple informative image like a photo or icon.", link: "https://www.w3.org/WAI/tutorials/images/informative/", label: "Use a brief description with context to convey meaning." },
+          { desc: "Complex image like a graph or chart.", link: "https://www.w3.org/WAI/tutorials/images/complex/", label: "Include a long description elsewhere on the page to communicate image meaning and purpose." },
+          { desc: "Image is redundant to real text nearby.", link: "https://www.w3.org/WAI/tutorials/images/decorative/", label: "Mark as decorative, or use an empty alt attribute." }
+        ],
+        noId: 3
+      },
+      {
+        id: 3,
+        question: "Is the image purely decorative or used for visual formatting?",
+        yes: [
+          { desc: `Whether to treat an image as decorative or informative is a judgement that only the author can make, based on the reasoning for including the image on the page. Images may be decorative when they are:
+            <ul>
+              <li>Visual styling such as borders, spacers, and corners</li>
+              <li>Supplementary to link text to improve appearance or increase the clickable area</li>
+              <li>Illustrative of adjacent text but not contributing information (“eye-candy”)</li>
+              <li>Identified and described by surrounding text</li>
+            </ul>`, link: "https://www.w3.org/WAI/tutorials/images/decorative/", label: "Read W3C decorative image guidelines." }
+        ],
+        noId: 4
+      },
+      {
+        id: 4,
+        question: "The alt-text decision guide does not cover all cases. For more information on writing accessible alternative attributes, refer to W3.org's Image Tutorials.",
+        yes: [
+          { desc: "Explore extended guidance, examples, and special use cases.", link: "https://www.w3.org/WAI/tutorials/images/", label: "Visit the full W3C Image Tutorials page" }
+        ],
+        noId: null
+      }
+    ];
+
+    const flowchart = document.getElementById('flowchart');
+
+    function createStep(stepData) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'step faded';
+      wrapper.id = `step-${stepData.id}`;
+      wrapper.innerHTML = `<strong>${stepData.question}</strong>`;
+
+      wrapper.addEventListener('click', () => {
+        const isActive = wrapper.classList.contains('active');
+        wrapper.classList.toggle('active');
+        wrapper.classList.toggle('faded');
+        if (isActive) {
+          clearBelow(stepData.id);
+        } else {
+          showAnswers(stepData);
+        }
+      });
+
+      return wrapper;
+    }
+
+    function showAnswers(stepData) {
+      const branchWrapper = document.createElement('div');
+      branchWrapper.className = 'branch';
+
+      const yesBox = document.createElement('div');
+      yesBox.className = 'option yes';
+      yesBox.innerHTML = `<strong>Yes</strong><div class="answer-detail">` +
+        stepData.yes.map(ans => `<div>${ans.desc}<br><a href="${ans.link}" target="_blank">${ans.label}</a></div>`).join('<hr>') + `</div>`;
+
+      branchWrapper.appendChild(yesBox);
+
+      if (stepData.noId !== null) {
+        const noBox = document.createElement('div');
+        noBox.className = 'option no';
+        noBox.innerHTML = `<strong>No</strong><div class="answer-detail">Continue to next question</div>`;
+        noBox.addEventListener('click', () => {
+          const nextStep = createStep(flowchartData.find(s => s.id === stepData.noId));
+          branchWrapper.after(nextStep);
+        });
+        branchWrapper.appendChild(noBox);
+      }
+
+      document.getElementById(`step-${stepData.id}`).after(branchWrapper);
+    }
+
+    function clearBelow(currentId) {
+      const steps = Array.from(document.querySelectorAll('.step, .branch'));
+      let clear = false;
+      for (let i = 0; i < steps.length; i++) {
+        if (clear) steps[i].remove();
+        if (steps[i].id === `step-${currentId}`) clear = true;
+      }
+    }
+
+    const first = createStep(flowchartData[0]);
+    flowchart.appendChild(first);
+  </script>
+</body>
+</html>
